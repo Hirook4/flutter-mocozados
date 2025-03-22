@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mocozados/_utils/color_theme.dart';
 import 'package:mocozados/components/input_field.dart';
+import 'package:mocozados/services/auth.dart';
 
 class SignUp extends StatefulWidget {
   const SignUp({super.key});
@@ -15,6 +16,8 @@ class SignUpState extends State<SignUp> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _dateController = TextEditingController();
+
+  final Auth _authService = Auth();
 
   /* Seleção de data de nascimento */
   Future<void> _selectDate(BuildContext context) async {
@@ -72,6 +75,27 @@ class SignUpState extends State<SignUp> {
     return null;
   }
 
+  /* Botão cadastrar */
+  signUpButton() {
+    if (_formKey.currentState!.validate()) {
+      _authService.signUpUser(
+        name: _nameController.text,
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      print('cadastrar');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Cadastrando..."),
+          duration: Duration(milliseconds: 1100),
+        ),
+      );
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        Navigator.pop(context);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,7 +142,7 @@ class SignUpState extends State<SignUp> {
                     _passwordValidate,
                   ),
                   SizedBox(height: 30),
-                  TextFormField(
+                  /* TextFormField(
                     style: TextStyle(
                       fontSize: 16,
                       color: ColorTheme.quaternaryColor,
@@ -150,7 +174,7 @@ class SignUpState extends State<SignUp> {
                       }
                       return null; /* Retorna null se a validação for feita */
                     },
-                  ),
+                  ), */
                   SizedBox(height: 25),
                   SizedBox(
                     width: double.infinity,
@@ -159,21 +183,7 @@ class SignUpState extends State<SignUp> {
                         backgroundColor: ColorTheme.tertiaryColor,
                       ),
                       onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          print('cadastrar');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Cadastrando..."),
-                              duration: Duration(milliseconds: 1100),
-                            ),
-                          );
-                          Future.delayed(
-                            const Duration(milliseconds: 1500),
-                            () {
-                              Navigator.pop(context);
-                            },
-                          );
-                        }
+                        signUpButton();
                       },
                       child: Text(
                         'Cadastrar',
