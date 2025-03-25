@@ -17,10 +17,7 @@ TextFormField inputField(
     decoration: InputDecoration(
       labelText: label,
       border: OutlineInputBorder(),
-      prefixIcon: Icon(
-        icon,
-        color: ColorTheme.quaternaryColor,
-      ), // Usando o Icon
+      prefixIcon: Icon(icon, color: ColorTheme.quaternaryColor),
       floatingLabelStyle: TextStyle(color: ColorTheme.quaternaryColor),
       focusedBorder: OutlineInputBorder(
         borderSide: BorderSide(color: ColorTheme.tertiaryColor, width: 3),

@@ -6,7 +6,6 @@ class Opening extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    bool login = true;
     return Scaffold(
       backgroundColor: ColorTheme.primaryColor,
       body: Form(

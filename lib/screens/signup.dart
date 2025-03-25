@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mocozados/_utils/color_theme.dart';
+import 'package:mocozados/_utils/snackbar.dart';
 import 'package:mocozados/components/input_field.dart';
 import 'package:mocozados/services/auth.dart';
 
@@ -78,21 +79,26 @@ class SignUpState extends State<SignUp> {
   /* Botão cadastrar */
   signUpButton() {
     if (_formKey.currentState!.validate()) {
-      _authService.signUpUser(
-        name: _nameController.text,
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
+      _authService
+          .signUpUser(
+            name: _nameController.text,
+            email: _emailController.text,
+            password: _passwordController.text,
+          )
+          .then((String? error) {
+            if (mounted) {
+              if (error != null) {
+                showSnackBar(context: context, text: error, isError: true);
+              } else {
+                showSnackBar(
+                  context: context,
+                  text: "Cadastro efetuado com sucesso!",
+                  isError: false,
+                );
+              }
+            }
+          });
       print('cadastrar');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Cadastrando..."),
-          duration: Duration(milliseconds: 1100),
-        ),
-      );
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        Navigator.pop(context);
-      });
     }
   }
 
@@ -142,40 +148,6 @@ class SignUpState extends State<SignUp> {
                     _passwordValidate,
                   ),
                   SizedBox(height: 30),
-                  /* TextFormField(
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: ColorTheme.quaternaryColor,
-                    ),
-                    controller: _dateController,
-                    decoration: InputDecoration(
-                      focusColor: ColorTheme.primaryColor,
-                      labelText: 'Data de Nascimento',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(
-                        Icons.calendar_today,
-                        color: ColorTheme.quaternaryColor,
-                      ),
-                      floatingLabelStyle: TextStyle(
-                        color: ColorTheme.quaternaryColor,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderSide: BorderSide(
-                          color: ColorTheme.tertiaryColor,
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                    readOnly: true,
-                    onTap: () => _selectDate(context),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, seleciona uma data';
-                      }
-                      return null; /* Retorna null se a validação for feita */
-                    },
-                  ), */
-                  SizedBox(height: 25),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

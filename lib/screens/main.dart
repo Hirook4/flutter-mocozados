@@ -3,14 +3,10 @@ import 'package:mocozados/firebase_options.dart';
 
 import 'package:flutter/material.dart';
 import 'package:mocozados/screens/login.dart';
-import 'package:mocozados/screens/opening.dart';
-import 'package:mocozados/screens/signup.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  runApp(const MyApp());
   runApp(const MyApp());
 }
 
