@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:mocozados/_utils/color_theme.dart';
+import 'package:mocozados/services/auth.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -13,32 +14,27 @@ class _HomeState extends State<Home> {
   LatLng? currentPosition;
   bool isLoadingLocation = true;
   String locationErrorMessage = '';
+  final Auth _authService = Auth();
 
   @override
-  /* Metodo chamado quando o Widget esta sendo inicializado */
   void initState() {
     super.initState();
     _getCurrentLocation();
   }
 
-  /* Pega as coordenadas atuais */
   Future<void> _getCurrentLocation() async {
-    /* Ativa tela de carregamento e zera mensagens de erro */
     setState(() {
       isLoadingLocation = true;
       locationErrorMessage = '';
     });
 
-    /* Verifica se o serviço de localização do dispositivo esta ativado e o status da permissão */
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     LocationPermission permission = await Geolocator.checkPermission();
 
-    /* Pede permissão para acessar a localização */
     if (!serviceEnabled || permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
     }
 
-    /* Avisa que o acesso a localização foi negado permanentemente (usuario precisa ativar manualmente) */
     if (permission == LocationPermission.deniedForever) {
       setState(() {
         isLoadingLocation = false;
@@ -47,7 +43,6 @@ class _HomeState extends State<Home> {
       return;
     }
 
-    /* Avisa que a localização esta desativada ou a permissão negada */
     if (!serviceEnabled || permission == LocationPermission.denied) {
       setState(() {
         isLoadingLocation = false;
@@ -57,19 +52,16 @@ class _HomeState extends State<Home> {
       return;
     }
 
-    /* Obtem localização do usuario */
     try {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       ).timeout(Duration(seconds: 10));
 
-      /* Se a localização for obtida, o estado da posição é atualizado */
       setState(() {
         currentPosition = LatLng(position.latitude, position.longitude);
         isLoadingLocation = false;
       });
 
-      /* Move a posição da camera do Maps para a posição do usuario */
       if (mapController != null && currentPosition != null) {
         _goToCurrentLocation();
       }
@@ -81,14 +73,12 @@ class _HomeState extends State<Home> {
     }
   }
 
-  /* Move a posição da camera do Maps para a posição do usuario */
   void _goToCurrentLocation() {
     if (mapController != null && currentPosition != null) {
       mapController!.animateCamera(CameraUpdate.newLatLng(currentPosition!));
     }
   }
 
-  /* Pega as cordenadas selecionadas e salva? */
   void _getCoordinates(LatLng position) {
     print(
       'Coordenadas: Latitude: ${position.latitude} / Longitude: ${position.longitude}',
@@ -114,7 +104,6 @@ class _HomeState extends State<Home> {
               ),
             )
           else
-            /* Google Maps */
             GoogleMap(
               zoomControlsEnabled: false,
               initialCameraPosition: CameraPosition(
@@ -134,7 +123,20 @@ class _HomeState extends State<Home> {
               onTap: _getCoordinates,
             ),
 
-          /* Barra inferior */
+          // Botão para centralizar localização
+          Align(
+            alignment: Alignment.bottomRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0, bottom: 80.0),
+              child: FloatingActionButton(
+                onPressed: _goToCurrentLocation,
+                backgroundColor: ColorTheme.primaryColor,
+                child: Icon(Icons.my_location, color: Colors.white),
+              ),
+            ),
+          ),
+
+          // Barra inferior com ícones
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
@@ -169,15 +171,20 @@ class _HomeState extends State<Home> {
             ),
           ),
 
-          /* Botão flutuante de voltar para localização atual */
+          /* Botão Logout */
           Align(
-            alignment: Alignment.bottomRight,
+            alignment: Alignment.topRight,
             child: Padding(
-              padding: const EdgeInsets.only(right: 16.0, bottom: 80.0),
-              child: FloatingActionButton(
-                onPressed: _goToCurrentLocation,
-                backgroundColor: ColorTheme.primaryColor,
-                child: Icon(Icons.my_location, color: Colors.white),
+              padding: const EdgeInsets.only(top: 40.0, right: 16.0),
+              child: IconButton(
+                icon: Icon(Icons.logout, color: Colors.red, size: 30),
+                onPressed: () async {
+                  /* Desloga no firebase e volta para a primeira tela */
+                  await _authService.signOutUser();
+                  await Future.delayed(Duration(milliseconds: 100));
+                  if (!mounted) return;
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
               ),
             ),
           ),

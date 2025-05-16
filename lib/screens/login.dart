@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mocozados/_utils/color_theme.dart';
+import 'package:mocozados/_utils/snackbar.dart';
 import 'package:mocozados/components/input_field.dart';
 import 'package:mocozados/screens/home.dart';
 import 'package:mocozados/screens/signup.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:mocozados/services/auth.dart';
 
 class Login extends StatefulWidget {
   const Login({super.key});
@@ -18,6 +20,7 @@ class _LoginState extends State<Login> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  final Auth _authService = Auth();
   @override
   void initState() {
     super.initState();
@@ -58,6 +61,29 @@ class _LoginState extends State<Login> {
       return 'A senha deve ter no mínimo 10 caracteres';
     }
     return null;
+  }
+
+  signInButton() {
+    if (_formKey.currentState!.validate()) {
+      _authService
+          .signInUser(
+            email: _emailController.text,
+            password: _passwordController.text,
+          )
+          .then((String? error) {
+            if (mounted) {
+              if (error != null) {
+                showSnackBar(context: context, text: error, isError: true);
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Home()),
+                );
+              }
+            }
+          });
+      print('Login');
+    }
   }
 
   @override
@@ -158,24 +184,7 @@ class _LoginState extends State<Login> {
                         backgroundColor: ColorTheme.tertiaryColor,
                       ),
                       onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          print('logar - Manter logado: $_keepLogged');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Logando..."),
-                              duration: Duration(milliseconds: 1100),
-                            ),
-                          );
-                          Future.delayed(
-                            const Duration(milliseconds: 1500),
-                            () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => Home()),
-                              );
-                            },
-                          );
-                        }
+                        signInButton();
                       },
                       child: Text(
                         'login',

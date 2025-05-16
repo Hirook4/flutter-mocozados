@@ -95,6 +95,7 @@ class SignUpState extends State<SignUp> {
                   text: "Cadastro efetuado com sucesso!",
                   isError: false,
                 );
+                Navigator.pop(context);
               }
             }
           });
