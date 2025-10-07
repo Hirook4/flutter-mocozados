@@ -1,6 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:mocozados/_utils/color_theme.dart';
 import 'package:mocozados/services/auth.dart';
 
@@ -8,10 +9,10 @@ class Home extends StatefulWidget {
   const Home({super.key});
 
   @override
-  _HomeState createState() => _HomeState();
+  HomeState createState() => HomeState();
 }
 
-class _HomeState extends State<Home> {
+class HomeState extends State<Home> {
   GoogleMapController? mapController;
   LatLng? currentPosition;
   bool isLoadingLocation = true;
@@ -24,6 +25,7 @@ class _HomeState extends State<Home> {
     _getCurrentLocation();
   }
 
+  /* Pega localização atual */
   Future<void> _getCurrentLocation() async {
     setState(() {
       isLoadingLocation = true;
@@ -40,7 +42,7 @@ class _HomeState extends State<Home> {
     if (permission == LocationPermission.deniedForever) {
       setState(() {
         isLoadingLocation = false;
-        locationErrorMessage = 'Permissão de Acesso a Localização Recusada.';
+        locationErrorMessage = 'Permissão de Acesso à Localização Recusada.';
       });
       return;
     }
@@ -56,8 +58,10 @@ class _HomeState extends State<Home> {
 
     try {
       Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      ).timeout(Duration(seconds: 10));
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      ).timeout(const Duration(seconds: 10));
 
       setState(() {
         currentPosition = LatLng(position.latitude, position.longitude);
@@ -75,15 +79,94 @@ class _HomeState extends State<Home> {
     }
   }
 
+  /* Centralizar mapa na localização atual */
   void _goToCurrentLocation() {
     if (mapController != null && currentPosition != null) {
       mapController!.animateCamera(CameraUpdate.newLatLng(currentPosition!));
     }
   }
 
-  void _getCoordinates(LatLng position) {
+  /* Stream de marcadores */
+  Stream<Set<Marker>> getMarkersStream() {
+    return FirebaseFirestore.instance.collection('locations').snapshots().map((
+      snapshot,
+    ) {
+      print('Total de marcadores: ${snapshot.docs.length}');
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        return Marker(
+          markerId: MarkerId(doc.id),
+          position: LatLng(data['lat'], data['lng']),
+          infoWindow: InfoWindow(
+            title: data['name'],
+            snippet: data['description'],
+          ),
+        );
+      }).toSet();
+    });
+  }
+
+  /* Modal para salvar local */
+  void _saveLocation(LatLng position) {
     print(
       'Coordenadas: Latitude: ${position.latitude} / Longitude: ${position.longitude}',
+    );
+
+    TextEditingController nameController = TextEditingController();
+    TextEditingController descController = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+            top: 20,
+            left: 20,
+            right: 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Nome do Local'),
+              ),
+              TextField(
+                controller: descController,
+                decoration: const InputDecoration(labelText: 'Descrição'),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () async {
+                  String name = nameController.text.trim();
+                  String desc = descController.text.trim();
+                  if (name.isEmpty || desc.isEmpty) return;
+
+                  /* Salva no Firebase */
+                  await FirebaseFirestore.instance.collection('locations').add({
+                    'name': name,
+                    'description': desc,
+                    'lat': position.latitude,
+                    'lng': position.longitude,
+                    'timestamp': FieldValue.serverTimestamp(),
+                  });
+
+                  Navigator.of(context).pop();
+
+                  /* Move a tela para o ponto salvo */
+                  mapController?.animateCamera(
+                    CameraUpdate.newLatLngZoom(position, 16),
+                  );
+                },
+                child: const Text('Salvar'),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -93,7 +176,7 @@ class _HomeState extends State<Home> {
       body: Stack(
         children: [
           if (isLoadingLocation)
-            Center(child: CircularProgressIndicator())
+            const Center(child: CircularProgressIndicator())
           else if (locationErrorMessage.isNotEmpty)
             Center(
               child: Padding(
@@ -101,31 +184,38 @@ class _HomeState extends State<Home> {
                 child: Text(
                   locationErrorMessage,
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red, fontSize: 16),
+                  style: const TextStyle(color: Colors.red, fontSize: 16),
                 ),
               ),
             )
           else
-            GoogleMap(
-              zoomControlsEnabled: false,
-              initialCameraPosition: CameraPosition(
-                target: currentPosition ?? LatLng(-23.5489, -46.6388),
-                zoom: 14,
-              ),
-              onMapCreated: (GoogleMapController controller) {
-                mapController = controller;
-                if (currentPosition != null) {
-                  mapController!.animateCamera(
-                    CameraUpdate.newLatLng(currentPosition!),
-                  );
-                }
-              },
-              myLocationEnabled: true,
-              myLocationButtonEnabled: false,
-              onTap: _getCoordinates,
-            ),
+            /* StreamBuilder para atualizar as localizações salvas no mapa */
+            StreamBuilder<Set<Marker>>(
+              stream: getMarkersStream(),
+              builder: (context, snapshot) {
+                final markers = snapshot.data ?? <Marker>{};
 
-          /* Botão para centralizar localização */
+                return GoogleMap(
+                  zoomControlsEnabled: false,
+                  initialCameraPosition: CameraPosition(
+                    target: currentPosition ?? const LatLng(-23.5489, -46.6388),
+                    zoom: 14,
+                  ),
+                  onMapCreated: (GoogleMapController controller) {
+                    mapController = controller;
+                    if (currentPosition != null) {
+                      mapController!.animateCamera(
+                        CameraUpdate.newLatLng(currentPosition!),
+                      );
+                    }
+                  },
+                  myLocationEnabled: true,
+                  myLocationButtonEnabled: false,
+                  onTap: _saveLocation,
+                  markers: markers,
+                );
+              },
+            ),
           Align(
             alignment: Alignment.bottomRight,
             child: Padding(
@@ -133,16 +223,14 @@ class _HomeState extends State<Home> {
               child: FloatingActionButton(
                 onPressed: _goToCurrentLocation,
                 backgroundColor: ColorTheme.primaryColor,
-                child: Icon(Icons.my_location, color: Colors.white),
+                child: const Icon(Icons.my_location, color: Colors.white),
               ),
             ),
           ),
-
-          /* Barra Inferior */
           Align(
             alignment: Alignment.bottomCenter,
             child: Container(
-              padding: EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
               decoration: BoxDecoration(
                 color: ColorTheme.primaryColor,
                 boxShadow: [
@@ -165,7 +253,7 @@ class _HomeState extends State<Home> {
                     onPressed: _goToCurrentLocation,
                   ),
                   IconButton(
-                    icon: Icon(Icons.list, size: 30, color: Colors.grey),
+                    icon: const Icon(Icons.list, size: 30, color: Colors.grey),
                     onPressed: () {},
                   ),
                 ],
@@ -177,13 +265,12 @@ class _HomeState extends State<Home> {
           Align(
             alignment: Alignment.topRight,
             child: Padding(
-              padding: const EdgeInsets.only(top: 40.0, right: 16.0),
+              padding: const EdgeInsets.only(top: 50.0, right: 16.0),
               child: IconButton(
-                icon: Icon(Icons.logout, color: Colors.red, size: 30),
+                icon: const Icon(Icons.logout, color: Colors.red, size: 30),
                 onPressed: () async {
-                  /* Desloga no firebase e volta para a primeira tela */
                   await _authService.signOutUser();
-                  await Future.delayed(Duration(milliseconds: 100));
+                  await Future.delayed(const Duration(milliseconds: 100));
                   if (!mounted) return;
                   Navigator.of(context).popUntil((route) => route.isFirst);
                 },

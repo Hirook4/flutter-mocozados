@@ -11,10 +11,10 @@ class Login extends StatefulWidget {
   const Login({super.key});
 
   @override
-  _LoginState createState() => _LoginState();
+  LoginState createState() => LoginState();
 }
 
-class _LoginState extends State<Login> {
+class LoginState extends State<Login> {
   final _formKey = GlobalKey<FormState>();
   bool _keepLogged = false;
   final TextEditingController _emailController = TextEditingController();
@@ -63,6 +63,7 @@ class _LoginState extends State<Login> {
     return null;
   }
 
+  /* Botão Logar */
   signInButton() {
     if (_formKey.currentState!.validate()) {
       _authService
@@ -82,7 +83,6 @@ class _LoginState extends State<Login> {
               }
             }
           });
-      print('Login');
     }
   }
 
@@ -163,9 +163,7 @@ class _LoginState extends State<Login> {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () {
-                          print('esqueci a senha');
-                        },
+                        onTap: () {},
                         child: Text(
                           "esqueci a senha",
                           style: TextStyle(
@@ -198,7 +196,6 @@ class _LoginState extends State<Login> {
                     children: [
                       GestureDetector(
                         onTap: () {
-                          print('cadastre-se');
                           Navigator.push(
                             context,
                             MaterialPageRoute(

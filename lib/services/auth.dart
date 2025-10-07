@@ -27,6 +27,7 @@ class Auth {
         'createdAt': DateTime.now().toIso8601String(),
       });
 
+      await FirebaseAuth.instance.signOut();
       return null;
     } on FirebaseAuthException catch (e) {
       if (e.code == "email-already-in-use") {

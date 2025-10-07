@@ -15,6 +15,8 @@ TextFormField inputField(
     controller: controller,
     validator: validator,
     cursorColor: ColorTheme.quaternaryColor,
+    readOnly: readOnly,
+    onTap: onTap,
     style: TextStyle(fontSize: 16, color: ColorTheme.quaternaryColor),
     decoration: InputDecoration(
       labelText: label,

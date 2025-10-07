@@ -19,12 +19,12 @@ class LocalModel {
     return LocalModel(
       id: map["id"] as String? ?? "",
       name: map["name"] as String? ?? "Local sem nome",
-      latitude:
-          (map["latitude"] is num) ? (map["latitude"] as num).toDouble() : 0.0,
-      longitude:
-          (map["longitude"] is num)
-              ? (map["longitude"] as num).toDouble()
-              : 0.0,
+      latitude: (map["latitude"] is num)
+          ? (map["latitude"] as num).toDouble()
+          : 0.0,
+      longitude: (map["longitude"] is num)
+          ? (map["longitude"] as num).toDouble()
+          : 0.0,
       link: map["link"] as String? ?? "",
     );
   }

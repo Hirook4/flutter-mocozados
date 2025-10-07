@@ -179,6 +179,7 @@ class SignUpState extends State<SignUp> {
                     _passwordController,
                     _passwordValidate,
                   ),
+                  SizedBox(height: 30),
                   inputField(
                     "Data de Nascimento",
                     Icons.calendar_month_outlined,
